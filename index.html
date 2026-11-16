@@ -7,9 +7,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="ゼロヨンバトル">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.json?v=181">
+<link rel="apple-touch-icon" href="icon-180.png?v=181">
+<link rel="icon" href="icon-192.png?v=181">
 <style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 canvas{-webkit-user-select:none;user-select:none;-webkit-user-drag:none}
 html,body{margin:0;height:100%;position:fixed;inset:0;width:100%;background:#050608;color:#e8f1ff;font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;touch-action:manipulation;overscroll-behavior:none}
@@ -295,7 +295,7 @@ const PHY = (() => {
 if (typeof module !== 'undefined') module.exports = PHY;
 
 // ===== ゼロヨンバトル 本体 =====
-const VERSION = 'v1.8.0 (2026-11-16)';
+const VERSION = 'v1.8.1 (2026-11-17)';
 const $ = id => document.getElementById(id);
 const JA = (navigator.language || 'ja').toLowerCase().startsWith('ja');
 const TXT = {

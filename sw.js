@@ -1,13 +1,25 @@
-// ゼロヨンバトル：オフライン対応＋自動更新
-const CACHE = 'zb-v1.8.0';
-const FILES = ['./', './index.html', './manifest.json', './icon-180.png', './icon-192.png', './icon-512.png'];
-self.addEventListener('install', e => { self.skipWaiting(); e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  // 通信できる時は新しい版、できない時は保存した版
-  e.respondWith(fetch(e.request, { cache: 'no-store' }).then(r => {
-    if (r && r.ok && new URL(e.request.url).origin === location.origin) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(e.request, cp)); }
-    return r;
-  }).catch(() => caches.match(e.request, { ignoreSearch: true }).then(m => m || caches.match('./index.html'))));
+/* ゼロヨンバトル — service worker
+   新しい版をGitHubに上げたら VERSION を変えるだけで、ホーム画面のアプリも自動で新しくなります */
+const VERSION = "zyb-v1.8.1";
+const FILES = ["./", "index.html", "manifest.json", "icon-180.png", "icon-192.png", "icon-512.png"];
+
+self.addEventListener("install", e => {
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+});
+self.addEventListener("activate", e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k))))
+    .then(() => self.clients.claim()));
+});
+self.addEventListener("fetch", e => {
+  const req = e.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return; // 対戦の通信などはそのまま通す
+  // まず最新を取りに行く → 通信がない時はしまってある版（オフラインでも動く）
+  e.respondWith(
+    fetch(req, { cache: "no-store" }).then(res => {
+      if (res && res.ok) { const copy = res.clone(); caches.open(VERSION).then(c => c.put(req, copy)); }
+      return res;
+    }).catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match("index.html")))
+  );
 });
