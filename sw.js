@@ -1,6 +1,6 @@
 /* ゼロヨンバトル — service worker
    新しい版をGitHubに上げたら VERSION を変えるだけで、ホーム画面のアプリも自動で新しくなります */
-const VERSION = "zyb-v1.9.0";
+const VERSION = "zyb-v1.9.1";
 const FILES = ["./", "index.html", "manifest.json", "icon-180.png", "icon-192.png", "icon-512.png"];
 
 self.addEventListener("install", e => {

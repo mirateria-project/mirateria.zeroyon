@@ -329,7 +329,7 @@ const PHY = (() => {
 if (typeof module !== 'undefined') module.exports = PHY;
 
 // ===== ゼロヨンバトル 本体 =====
-const VERSION = 'v1.9.0 (2026-11-18)';
+const VERSION = 'v1.9.1 (2026-11-21)';
 const $ = id => document.getElementById(id);
 const JA = (navigator.language || 'ja').toLowerCase().startsWith('ja');
 const TXT = {
@@ -1729,7 +1729,14 @@ function replayStep(h){
 function endReplay(){ if (!R || !R.replay) return; toHome(); openRank(); }
 
 // ===== みんなのランキング（ベスト10・イニシャル） =====
-const RANK_URL = 'https://zeroyon-rank.e46-toshi-1124.workers.dev';
+const RANK_URL = 'https://zeroyon-ranking.e46-toshi-1124.workers.dev';
+// 中継の形 {name,time,mode,ghost,date} → アプリの形 {n,f,m,b,trap,s,r,g,d}
+function fromSrv(list){ return (Array.isArray(list) ? list : []).map(x => {
+  const g = (x && x.ghost && typeof x.ghost === 'object') ? x.ghost : {}, dt = x && x.date ? new Date(x.date) : null;
+  return Object.assign({}, g, { n: x.name, f: Number(x.time), m: g.m || x.mode || 'H',
+    d: dt ? dt.getFullYear() + '/' + (dt.getMonth() + 1) + '/' + dt.getDate() : (g.d || '') });
+}); }
+function toSrv(e){ return JSON.stringify({ name: e.n, time: e.f, mode: e.m, ghost: e }); }
 let RANK = null, LASTRUN = null, INIT = '', PEND = null;
 try {
   RANK = JSON.parse(localStorage.getItem('zb_rank') || 'null');
@@ -1745,7 +1752,7 @@ function rankFetch(path, opt){
   return fetch(RANK_URL + path, Object.assign({ cache: 'no-store' }, ctl ? { signal: ctl.signal } : {}, opt || {}))
     .then(r => { clearTimeout(tm); if (!r.ok) throw new Error('http ' + r.status); return r.json(); });
 }
-function rankLoad(){ return rankFetch('/top').then(j => { if (j && Array.isArray(j.list)) { RANK = j.list; saveRank(); } return RANK; }); }
+function rankLoad(){ return rankFetch('/').then(j => { if (Array.isArray(j)) { RANK = fromSrv(j); saveRank(); } return RANK; }); }
 function rankQualifies(f){ const L = RANK || []; return L.length < 10 || f < L[L.length - 1].f; }
 const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
 function renderRank(){
@@ -1780,9 +1787,10 @@ function openInit(){
 $('initIn').addEventListener('input', e => { e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3); });
 function sendEntry(entry, msgEl, done){
   $('bInitOk').disabled = true; msgEl.style.color = '#9fe8cf'; msgEl.textContent = T('initSending');
-  rankFetch('/submit', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(entry) })
-    .then(j => {
-      if (j && Array.isArray(j.list)) RANK = j.list;
+  rankFetch('/', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: toSrv(entry) })
+    .then(arr => {
+      if (Array.isArray(arr)) RANK = fromSrv(arr);
+      const j = { rank: (RANK || []).findIndex(e => e.n === entry.n && Math.abs(e.f - entry.f) < 0.0005) + 1 };
       PEND = null; LASTRUN = null; saveRank(); $('bRankReg').style.display = 'none';
       if (j && j.rank > 0) { msgEl.style.color = '#5dffb6'; msgEl.textContent = JA ? j.rank + T('initDone') : '#' + j.rank + ' ' + T('initDone'); }
       else { msgEl.style.color = '#ffb36b'; msgEl.textContent = T('initOut'); }
@@ -1804,8 +1812,8 @@ $('bPend').onclick = () => { if (PEND) sendEntry(PEND, $('rankStatus'), renderRa
 // 起動時：ランキングを読み込み、送れていない記録があれば送る
 rankLoad().catch(() => {});
 if (PEND && navigator.onLine) setTimeout(() => {
-  rankFetch('/submit', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(PEND) })
-    .then(j => { if (j && Array.isArray(j.list)) RANK = j.list; PEND = null; saveRank(); }).catch(() => {});
+  rankFetch('/', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: toSrv(PEND) })
+    .then(arr => { if (Array.isArray(arr)) RANK = fromSrv(arr); PEND = null; saveRank(); }).catch(() => {});
 }, 1500);
 
 // ===== 起動 =====
